@@ -2,7 +2,7 @@ library(qdap)
 library(koRpus)
 library(textcat)
 
-
+source('sentiment-functions.R')
 source('db-functions.R')
 filenames = calibreGetFilenames()
 
@@ -10,7 +10,9 @@ for (i in 1:1) {
   file = print(filenames$filename[i])
   
   # collect raw text
-  raw_text = substr(readChar(file, file.info(file)$size),1,10000)
+  #raw_text = substr(readChar(file, file.info(file)$size),1,10000)
+  raw_text = substr(readChar(file, file.info(file)$size),1,30000)
+  
   
   # tag the text
   tagged.text = tokenize(raw_text, format="obj", lang='en')
@@ -39,6 +41,7 @@ for (i in 1:1) {
   tagged.text@desc$avg.sentc.length
   tagged.text@desc$avg.word.length
   tagged.text@desc$letters
+  
   tagged.text@desc$char.distrib
   tagged.text@desc$lttr.distrib
   
@@ -48,40 +51,33 @@ for (i in 1:1) {
   hyphenated.text@desc$syll.unique.distrib
   hyphenated.text@desc$syll.per100
   
+  
+  
   # Lexical diversity
-  ex.div(tagged.text(), segment=input$LD.segment, factor.size=input$LD.factor, min.tokens=input$LD.minTokens,
-         rand.sample=input$LD.random, window=input$LD.window, case.sens=input$LD.caseSens, detailed=FALSE, char=c(), quiet=TRUE))
+  #lex.div(tagged.text, segment=input$LD.segment, factor.size=input$LD.factor, min.tokens=input$LD.minTokens,
+  #       rand.sample=input$LD.random, window=input$LD.window, case.sens=input$LD.caseSens, detailed=FALSE, char=c(), quiet=TRUE))
+
+  r_measures = c("TTR", "MSTTR", "MATTR", "C", "R", "CTTR","U", "S", "K", "Maas", "HD-D", "MTLD")
+  lexdiv.scores = lex.div(tagged.text, keep.tokens = T,  measure = r_measures, char = r_measures)
+  summary(lexdiv.scores)
+  
+  # readability
+  readability.scores = readability(tagged.text, hyphen=hyphenated.text,  quiet=TRUE, factor.size = 0.5)
+  summary(readability.scores)
+
+  # sentiment
+  sentiment.scores = getSentiment(input_text = raw_text,book_title = filenames$title[i])
+  
+  # Create base plot
+  plot.sentiment<- ggplot(sentiment.scores, aes(x = percent, y = sentiment, color='#DB0049')  )
+  
+  # detail plot
+  print(plot.sentiment + geom_point() + 
+          stat_smooth(method="loess",span=0.1) + 
+          geom_hline() + theme_bw() + 
+          theme(legend.position="none") + 
+          opts(panel.background = theme_rect(fill='#F5F5F5'),
+               plot.background = element_rect(fill='#F5F5F5')))
+  
   
 }
-
-
-
-
-AR1 <- with(rajSPLIT, automated_readability_index(dialogue, list(person, act)))
-htruncdf(AR1,, 15)
-AR2 <- with(rajSPLIT, automated_readability_index(dialogue, list(sex, fam.aff)))
-htruncdf(AR2,, 15)
-
-CL1 <- with(rajSPLIT, coleman_liau(dialogue, list(person, act)))
-head(CL1)
-CL2 <- with(rajSPLIT, coleman_liau(dialogue, list(sex, fam.aff)))
-head(CL2)
-
-SM1 <- with(rajSPLIT, SMOG(dialogue, list(person, act)))
-head(SM1)
-SM2 <- with(rajSPLIT, SMOG(dialogue, list(sex, fam.aff)))
-head(SM2)
-
-FL1 <- with(rajSPLIT, flesch_kincaid(dialogue, list(person, act)))
-head(FL1)
-FL2 <-  with(rajSPLIT, flesch_kincaid(dialogue, list(sex, fam.aff)))
-head(FL2)
-
-FR <- with(rajSPLIT, fry(dialogue, list(sex, fam.aff)))
-htruncdf(FR$SENTENCES_USED)
-head(FR$SENTENCE_AVERAGES)
-
-LW1 <- with(rajSPLIT, linsear_write(dialogue, list(person, act)))
-head(LW1)
-LW2 <- with(rajSPLIT, linsear_write(dialogue, list(sex, fam.aff)))
-head(LW2)

@@ -13,7 +13,7 @@ calibreGetFilenames <- function (connection = con) {
                     identifiers.val
                     FROM books INNER JOIN data ON books.id = data.book
                     INNER JOIN identifiers ON books.id = identifiers.book
-                    WHERE data.format = 'TXT' and identifiers.type = 'isbn' ")
+                    WHERE data.format = 'TXT' and identifiers.type = 'isbn' and books.author_sort like '%rosenboom%' and books.title like '%zoet%'   ")
   return(data)
 }
 
